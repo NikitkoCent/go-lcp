@@ -4,16 +4,16 @@ package LCP
 
 type LongestCommonPrefix interface {
 
-	// Get the longest common prefix length for two specified suffixes of the string
-	//
-	// Arguments:
-	//   firstSuffixIndex - position for the first suffix
-	//   secondSuffixIndex - position for the second suffix
-	//
-	// Return value: position of the longest common prefix for specified suffixes
-	//
-	// Complexity: O(logN), where N is the string length
-	Get(firstSuffixIndex uint64, secondSuffixIndex uint64) uint64
+    // Get the longest common prefix length for two specified suffixes of the string
+    //
+    // Arguments:
+    //   firstSuffixIndex - position for the first suffix
+    //   secondSuffixIndex - position for the second suffix
+    //
+    // Return value: position of the longest common prefix for specified suffixes
+    //
+    // Complexity: O(logN), where N is the string length
+    Get(firstSuffixIndex uint64, secondSuffixIndex uint64) uint64
 }
 
 // Create longest common prefix data structure for the specified string
@@ -23,7 +23,7 @@ type LongestCommonPrefix interface {
 //
 // Complexity: O(N * logN), where N is the string length
 func NewLongestCommonPrefix(str string) LongestCommonPrefix {
-	return &lcpImpl{}
+    return &lcpImpl{}
 }
 
 
@@ -34,5 +34,5 @@ type lcpImpl struct {
 }
 
 func (lcp *lcpImpl) Get(firstPrefixIndex uint64, secondPrefixIndex uint64) uint64 {
-	return 0
+    return 0
 }
