@@ -2,6 +2,7 @@ package LCP_test
 
 import (
 	"LCP"
+	SegmentTree "LCP/internal"
 	"testing"
 )
 
@@ -191,5 +192,85 @@ func TestSuffixArray3(t *testing.T) {
 			t.Errorf("eqCl == %v != eqClExpected == %v", eqCl, eqClExpected)
 			break
 		}
+	}
+}
+
+func TestRMQSingle(t *testing.T) {
+	data := [...]uint64{20}
+	const min = 20
+
+	tree := SegmentTree.MakeMinSegmentTree(data[:])
+
+	result := tree.Get(0, 0)
+	if result != min {
+		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
+	}
+}
+
+func TestRMQTwo(t *testing.T) {
+	data := [...]uint64{20, 10}
+
+	tree := SegmentTree.MakeMinSegmentTree(data[:])
+
+	result := tree.Get(0, 1)
+	min := uint64(10)
+
+	if result != min {
+		t.Errorf("tree.Get(0, 1) == %d != %d", result, min)
+	}
+
+	result = tree.Get(0, 0)
+	min = 20
+
+	if result != min {
+		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
+	}
+
+	result = tree.Get(1, 1)
+	min = 10
+
+	if result != min {
+		t.Errorf("tree.Get(1, 1) == %d != %d", result, min)
+	}
+}
+
+func TestRMQThree(t *testing.T) {
+	data := [...]uint64{20, 10, 5}
+
+	tree := SegmentTree.MakeMinSegmentTree(data[:])
+
+	result := tree.Get(0, 1)
+	min := uint64(10)
+
+	if result != min {
+		t.Errorf("tree.Get(0, 1) == %d != %d", result, min)
+	}
+
+	result = tree.Get(0, 0)
+	min = 20
+
+	if result != min {
+		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
+	}
+
+	result = tree.Get(1, 1)
+	min = 10
+
+	if result != min {
+		t.Errorf("tree.Get(1, 1) == %d != %d", result, min)
+	}
+
+	result = tree.Get(1, 2)
+	min = 5
+
+	if result != min {
+		t.Errorf("tree.Get(1, 2) == %d != %d", result, min)
+	}
+
+	result = tree.Get(0, 2)
+	min = 5
+
+	if result != min {
+		t.Errorf("tree.Get(0, 2) == %d != %d", result, min)
 	}
 }

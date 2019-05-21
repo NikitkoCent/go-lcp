@@ -45,13 +45,6 @@ func (lcp *lcpImpl) Get(firstPrefixIndex uint64, secondPrefixIndex uint64) uint6
 	return 0
 }
 
-func max(a, b uint64) uint64 {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 type SuffixArray []uint64
 type EquivClasses []uint8
 
