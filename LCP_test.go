@@ -2,7 +2,6 @@ package LCP_test
 
 import (
 	"LCP"
-	SegmentTree "LCP/internal"
 	"testing"
 )
 
@@ -39,10 +38,8 @@ func TestFromSRS(t *testing.T) {
 		{first: 0, second: 5, expected: 0}, // i.e. ""
 		{first: 0, second: 6, expected: 1}, // i.e. "a"
 		{first: 0, second: 0, expected: 7}, // i.e. "abacaba"
-		{first: 0, second: 7, expected: 0}, // i.e. ""
 		{first: 1, second: 5, expected: 2}, // i.e. "ab"
 		{first: 2, second: 6, expected: 1}, // i.e. "a"
-		{first: 7, second: 7, expected: 0}, // i.e. ""
 	}
 
 	lcp := LCP.NewLongestCommonPrefix(testedString)
@@ -56,6 +53,9 @@ func TestFromSRS(t *testing.T) {
 
 	// first is out of bounds
 	testCase{first: 8, second: 0, expected: 100}.assertPanic(lcp, t)
+
+	// both is out of bounds
+	testCase{first: 7, second: 7, expected: 0}.assertPanic(lcp, t)
 }
 
 func TestEmpty(t *testing.T) {
@@ -113,164 +113,5 @@ func TestFearOfBigWords(t *testing.T) {
 
 	for _, c := range nCases {
 		c.assertPanic(lcp, t)
-	}
-}
-
-// will be deleted
-func TestSuffixArrayEmpty(t *testing.T) {
-	sufArr, eqCl := LCP.MakeSuffixArray("")
-
-	if len(sufArr) != 0 {
-		t.Errorf("len(sufArr) == %d != 0", len(sufArr))
-	}
-
-	if len(eqCl) != 0 {
-		t.Errorf("len(eqCl) == %d != 0", len(eqCl))
-	}
-}
-
-// will be deleted
-func TestSuffixArray1(t *testing.T) {
-	sufArr, _ := LCP.MakeSuffixArray("abacaba")
-
-	sufArrExpected := [...]uint64{6, 4, 0, 2, 5, 1, 3}
-
-	if len(sufArr) != len(sufArrExpected) {
-		t.Errorf("len(sufArr) == %d != len(sufArrExpected) == %d", len(sufArr), len(sufArrExpected))
-	}
-
-	for i, val := range sufArrExpected {
-		if val != sufArr[i] {
-			t.Errorf("sufArr == %v != sufArrExpected == %v", sufArr, sufArrExpected)
-			break
-		}
-	}
-}
-
-// will be deleted
-func TestSuffixArray2(t *testing.T) {
-	sufArr, _ := LCP.MakeSuffixArray("banana")
-
-	sufArrExpected := [...]uint64{5, 3, 1, 0, 4, 2}
-
-	if len(sufArr) != len(sufArrExpected) {
-		t.Errorf("len(sufArr) == %d != len(sufArrExpected) == %d", len(sufArr), len(sufArrExpected))
-	}
-
-	for i, val := range sufArrExpected {
-		if val != sufArr[i] {
-			t.Errorf("sufArr == %v != sufArrExpected == %v", sufArr, sufArrExpected)
-			break
-		}
-	}
-}
-
-// will be deleted
-func TestSuffixArray3(t *testing.T) {
-	sufArr, eqCl := LCP.MakeSuffixArray("aaba")
-
-	sufArrExpected := [...]uint64{3, 0, 1, 2}
-	eqClExpected := [...]uint8{1, 2, 3, 0}
-
-	if len(sufArr) != len(sufArrExpected) {
-		t.Errorf("len(sufArr) == %d != len(sufArrExpected) == %d", len(sufArr), len(sufArrExpected))
-	}
-
-	for i, val := range sufArrExpected {
-		if val != sufArr[i] {
-			t.Errorf("sufArr == %v != sufArrExpected == %v", sufArr, sufArrExpected)
-			break
-		}
-	}
-
-	if len(eqCl) != len(eqClExpected) {
-		t.Errorf("len(eqCl) == %d != len(eqClExpected) == %d", len(eqCl), len(eqClExpected))
-	}
-
-	for i, val := range eqClExpected {
-		if val != eqCl[i] {
-			t.Errorf("eqCl == %v != eqClExpected == %v", eqCl, eqClExpected)
-			break
-		}
-	}
-}
-
-func TestRMQSingle(t *testing.T) {
-	data := [...]uint64{20}
-	const min = 20
-
-	tree := SegmentTree.MakeMinSegmentTree(data[:])
-
-	result := tree.Get(0, 0)
-	if result != min {
-		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
-	}
-}
-
-func TestRMQTwo(t *testing.T) {
-	data := [...]uint64{20, 10}
-
-	tree := SegmentTree.MakeMinSegmentTree(data[:])
-
-	result := tree.Get(0, 1)
-	min := uint64(10)
-
-	if result != min {
-		t.Errorf("tree.Get(0, 1) == %d != %d", result, min)
-	}
-
-	result = tree.Get(0, 0)
-	min = 20
-
-	if result != min {
-		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
-	}
-
-	result = tree.Get(1, 1)
-	min = 10
-
-	if result != min {
-		t.Errorf("tree.Get(1, 1) == %d != %d", result, min)
-	}
-}
-
-func TestRMQThree(t *testing.T) {
-	data := [...]uint64{20, 10, 5}
-
-	tree := SegmentTree.MakeMinSegmentTree(data[:])
-
-	result := tree.Get(0, 1)
-	min := uint64(10)
-
-	if result != min {
-		t.Errorf("tree.Get(0, 1) == %d != %d", result, min)
-	}
-
-	result = tree.Get(0, 0)
-	min = 20
-
-	if result != min {
-		t.Errorf("tree.Get(0, 0) == %d != %d", result, min)
-	}
-
-	result = tree.Get(1, 1)
-	min = 10
-
-	if result != min {
-		t.Errorf("tree.Get(1, 1) == %d != %d", result, min)
-	}
-
-	result = tree.Get(1, 2)
-	min = 5
-
-	if result != min {
-		t.Errorf("tree.Get(1, 2) == %d != %d", result, min)
-	}
-
-	result = tree.Get(0, 2)
-	min = 5
-
-	if result != min {
-		t.Errorf("tree.Get(0, 2) == %d != %d", result, min)
 	}
 }

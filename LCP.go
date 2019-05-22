@@ -3,6 +3,7 @@
 package LCP
 
 import (
+	. "LCP/internal"
 	"math"
 )
 
@@ -27,7 +28,20 @@ type LongestCommonPrefix interface {
 //
 // Complexity: O(N * logN), where N is the string length
 func NewLongestCommonPrefix(str string) LongestCommonPrefix {
-	return &lcpImpl{}
+	result := lcpImpl{}
+
+	result.len = uint64(len(str))
+
+	// O(N * log N)
+	sufArr, lcpArr := makeSuffixAndLcpArrays(str)
+
+	// O(N)
+	result.sortedSuffixesPos = sufArr.makeInversed()
+
+	// O(N)
+	result.commonPrefixesLengths = MakeMinSegmentTree(lcpArr)
+
+	return &result
 }
 
 // Implementation
@@ -38,35 +52,64 @@ const (
 	charsCount = charMax - charMin + 1
 )
 
+type suffixArray []uint64
+type equivClasses []uint8
+type inverseSuffixArray []uint64
+type lcpArray []uint64
+
 type lcpImpl struct {
+	len uint64
+	sortedSuffixesPos     inverseSuffixArray
+	commonPrefixesLengths SegmentTree
 }
 
-func (lcp *lcpImpl) Get(firstPrefixIndex uint64, secondPrefixIndex uint64) uint64 {
-	return 0
+func (lcp *lcpImpl) Get(firstSuffixIndex uint64, secondSuffixIndex uint64) uint64 {
+	if (firstSuffixIndex >= lcp.len) || (secondSuffixIndex >= lcp.len) {
+		panic("Index out of bounds")
+	}
+
+	if firstSuffixIndex == secondSuffixIndex {
+		return uint64(len(lcp.sortedSuffixesPos)) - firstSuffixIndex
+	}
+
+	minIndex := lcp.sortedSuffixesPos[firstSuffixIndex]
+	maxIndex := lcp.sortedSuffixesPos[secondSuffixIndex]
+
+	if minIndex > maxIndex {
+		minIndex, maxIndex = maxIndex, minIndex
+	}
+
+	return lcp.commonPrefixesLengths.Get(minIndex, maxIndex - 1)
 }
 
-type SuffixArray []uint64
-type EquivClasses []uint8
 
-func makeSuffixArray(str string) (SuffixArray, EquivClasses) {
+func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 	strLen := uint64(len(str))
 
-	sufArr := make(SuffixArray, strLen)
-	eqCl := make(EquivClasses, strLen)
+	sufArr := make(suffixArray, strLen)
+	eqCl := make(equivClasses, strLen)
 
 	if strLen == 0 {
-		return sufArr, eqCl
+		return sufArr, nil
 	}
 
 	classesCount := initSuffixArray(str, &sufArr, &eqCl)
 
-	sortedSufArr := make(SuffixArray, strLen)
-	eqClTemp := make(EquivClasses, strLen)
+	sortedSufArr := make(suffixArray, strLen)
+	eqClTemp := make(equivClasses, strLen)
 
 	sortingTable := [charsCount]uint64{}
 
+	lcp := make(lcpArray, strLen - 1)
+	lcpTemp := make(lcpArray, strLen - 1)
+
+	rPos := make([]uint64, strLen)
+	lPos := make([]uint64, strLen)
+
 	// O(N * logN)
 	for oldSubStrLen := uint64(1); oldSubStrLen < strLen; oldSubStrLen *= 2 {
+		initPoses(rPos, lPos, sufArr, eqCl)
+
 		for i := range sortedSufArr {
 			if sufArr[i] < oldSubStrLen {
 				sortedSufArr[i] = strLen
@@ -111,14 +154,37 @@ func makeSuffixArray(str string) (SuffixArray, EquivClasses) {
 			eqClTemp[sufArr[i]] = classesCount - 1
 		}
 
+		lcpRmq := MakeMinSegmentTree(lcp)
+		for i := range lcpTemp {
+			subStr1Pos, subStr2Pos := sufArr[i], sufArr[i + 1]
+
+			if eqCl[subStr1Pos] == eqCl[subStr2Pos] {
+				str1Pos := (subStr1Pos + oldSubStrLen) % strLen
+				str2Pos := (subStr2Pos + oldSubStrLen) % strLen
+
+				lcpTemp[i] = Min(strLen, oldSubStrLen + lcpRmq.Get(lPos[eqCl[str1Pos]], rPos[eqCl[str2Pos]] - 1))
+			} else {
+				lcpTemp[i] = lcp[rPos[eqCl[subStr1Pos]]]
+			}
+		}
+
+		lcp, lcpTemp = lcpTemp, lcp
 		eqCl, eqClTemp = eqClTemp, eqCl
 	}
 
-	return sufArr, eqCl
+	// avoiding circular substrings
+	// O(N)
+	for i := range lcp {
+		lcp[i] = Min(lcp[i], Min(strLen - sufArr[i], strLen - sufArr[i + 1]))
+	}
+
+	return sufArr, lcp
 }
 
+// Initializes suffix array and array of equivalence classes
+// Returns count of equivalence classes
 // Complexity: O(N)
-func initSuffixArray(str string, sufArr *SuffixArray, eqCl *EquivClasses) uint8 {
+func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint8 {
 	sortingTable := [charsCount]uint64{}
 
 	// O(N)
@@ -152,6 +218,24 @@ func initSuffixArray(str string, sufArr *SuffixArray, eqCl *EquivClasses) uint8 
 	return classesCount
 }
 
-func MakeSuffixArray(str string) (SuffixArray, EquivClasses) {
-	return makeSuffixArray(str)
+func initPoses(rPos []uint64, lPos []uint64, sufArr suffixArray, eqCl equivClasses) {
+	for i := range rPos {
+		rPos[eqCl[sufArr[i]]] = uint64(i)
+	}
+
+	for i := uint64(len(lPos)); i > 0; {
+		i--
+		lPos[eqCl[sufArr[i]]] = i
+	}
+}
+
+// O(N)
+func (sufArr suffixArray) makeInversed() inverseSuffixArray {
+	result := make(inverseSuffixArray, len(sufArr))
+
+	for i, val := range sufArr {
+		result[val] = uint64(i)
+	}
+
+	return result
 }
