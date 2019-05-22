@@ -53,7 +53,7 @@ const (
 )
 
 type suffixArray []uint64
-type equivClasses []uint8
+type equivClasses []uint64
 type inverseSuffixArray []uint64
 type lcpArray []uint64
 
@@ -98,7 +98,7 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 	sortedSufArr := make(suffixArray, strLen)
 	eqClTemp := make(equivClasses, strLen)
 
-	sortingTable := [charsCount]uint64{}
+	sortingTable := make([]uint64, strLen)
 
 	lcp := make(lcpArray, strLen - 1)
 	lcpTemp := make(lcpArray, strLen - 1)
@@ -184,7 +184,7 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 // Initializes suffix array and array of equivalence classes
 // Returns count of equivalence classes
 // Complexity: O(N)
-func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint8 {
+func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint64 {
 	sortingTable := [charsCount]uint64{}
 
 	// O(N)
@@ -204,7 +204,7 @@ func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint8 
 	}
 
 	(*eqCl)[(*sufArr)[0]] = 0
-	classesCount := uint8(1)
+	classesCount := uint64(1)
 
 	// O(N)
 	for i := 1; i < len(*sufArr); i++ {
