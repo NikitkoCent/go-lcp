@@ -1,7 +1,7 @@
-package LCP_test
+package lcp_test
 
 import (
-	"LCP"
+	lcppkg "lcp"
 	"testing"
 )
 
@@ -10,14 +10,14 @@ type testCase struct {
 	expected      uint64
 }
 
-func (tc testCase) assertValue(lcp LCP.LongestCommonPrefix, t *testing.T) {
+func (tc testCase) assertValue(lcp lcppkg.LongestCommonPrefix, t *testing.T) {
 	actual := lcp.Get(tc.first, tc.second)
 	if actual != tc.expected {
 		t.Errorf("Get(%d, %d) returned %d ; expected: %d", tc.first, tc.second, actual, tc.expected)
 	}
 }
 
-func (tc testCase) assertPanic(lcp LCP.LongestCommonPrefix, t *testing.T) {
+func (tc testCase) assertPanic(lcp lcppkg.LongestCommonPrefix, t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("Get(%d, %d) didn't panic, but it should", tc.first, tc.second)
@@ -42,7 +42,7 @@ func TestFromSRS(t *testing.T) {
 		{first: 2, second: 6, expected: 1}, // i.e. "a"
 	}
 
-	lcp := LCP.NewLongestCommonPrefix(testedString)
+	lcp := lcppkg.NewLongestCommonPrefix(testedString)
 
 	for _, c := range cases {
 		c.assertValue(lcp, t)
@@ -67,7 +67,7 @@ func TestEmpty(t *testing.T) {
 		{first: 3, second: 0, expected: 100},
 	}
 
-	lcp := LCP.NewLongestCommonPrefix("")
+	lcp := lcppkg.NewLongestCommonPrefix("")
 
 	for _, c := range cases {
 		c.assertPanic(lcp, t)
@@ -78,7 +78,7 @@ func TestSamePrefixes(t *testing.T) {
 	const testedString = "banana"
 	const lenU64 = uint64(len(testedString))
 
-	lcp := LCP.NewLongestCommonPrefix(testedString)
+	lcp := lcppkg.NewLongestCommonPrefix(testedString)
 
 	for i := uint64(0); i < lenU64; i++ {
 		testCase{first: i, second: i, expected: lenU64 - i}.assertValue(lcp, t)
@@ -105,7 +105,7 @@ func TestFearOfBigWords(t *testing.T) {
 		{first: 26, second: 414, expected: 100},
 	}
 
-	lcp := LCP.NewLongestCommonPrefix(testedString)
+	lcp := lcppkg.NewLongestCommonPrefix(testedString)
 
 	for _, c := range pCases {
 		c.assertValue(lcp, t)

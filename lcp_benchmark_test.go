@@ -1,7 +1,7 @@
-package LCP_test
+package lcp_test
 
 import (
-	"LCP"
+	lcppkg "lcp"
 	"math/rand"
 	"os"
 	"testing"
@@ -26,13 +26,13 @@ func doNewLongestCommonPrefixBench(strLength uint64, b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		LCP.NewLongestCommonPrefix(str)
+		lcppkg.NewLongestCommonPrefix(str)
 	}
 }
 
 func doGetBench(strLength uint64, b *testing.B) {
 	str := generateString(strLength)
-	lcp := LCP.NewLongestCommonPrefix(str)
+	lcp := lcppkg.NewLongestCommonPrefix(str)
 
 	b.ResetTimer()
 

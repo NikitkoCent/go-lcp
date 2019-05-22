@@ -1,9 +1,9 @@
 // Package LCP provides data structure which allows effectively calculate
 // longest common prefix of two any suffixes of specified string.
-package LCP
+package lcp
 
 import (
-	. "LCP/internal"
+	. "lcp/internal"
 	"math"
 )
 
