@@ -9,8 +9,15 @@ import (
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const maxStringLength = 1000000
 
-func generateString(length uint64) string {
+var (
+	maxString     string
+	firstIndexes  []uint
+	secondIndexes []uint
+)
+
+func generateString(length uint) string {
 	result := make([]byte, length)
 
 	for i := range result {
@@ -20,8 +27,8 @@ func generateString(length uint64) string {
 	return string(result)
 }
 
-func doNewLongestCommonPrefixBench(strLength uint64, b *testing.B) {
-	str := generateString(strLength)
+func doNewLongestCommonPrefixBench(strLength uint, b *testing.B) {
+	str := maxString[:strLength]
 
 	b.ResetTimer()
 
@@ -30,14 +37,16 @@ func doNewLongestCommonPrefixBench(strLength uint64, b *testing.B) {
 	}
 }
 
-func doGetBench(strLength uint64, b *testing.B) {
-	str := generateString(strLength)
+func doGetBench(strLength uint, b *testing.B) {
+	str := maxString[:strLength]
 	lcp := lcppkg.NewLongestCommonPrefix(str)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		lcp.Get(strLength / 3, (strLength / 3) * 2)
+		firstIndex := firstIndexes[i % maxStringLength]
+		secondIndex := secondIndexes[i % maxStringLength]
+		lcp.Get(firstIndex % strLength, secondIndex % strLength)
 	}
 }
 
@@ -94,6 +103,22 @@ func BenchmarkGet1000000(b *testing.B) {
 
 func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UnixNano())
+
+	maxString = generateString(1000000)
+	firstIndexes = make([]uint, maxStringLength)
+	secondIndexes = make([]uint, maxStringLength)
+
+	for i := range firstIndexes {
+		firstIndexes[i] = uint(i)
+		secondIndexes[i] = uint(i)
+	}
+
+	rand.Shuffle(maxStringLength, func(i, j int) {
+		firstIndexes[i], firstIndexes[j] = firstIndexes[j], firstIndexes[i]
+	})
+	rand.Shuffle(maxStringLength, func(i, j int) {
+		secondIndexes[i], secondIndexes[j] = secondIndexes[j], secondIndexes[i]
+	})
 
 	os.Exit(m.Run())
 }

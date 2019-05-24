@@ -6,8 +6,8 @@ import (
 )
 
 type testCase struct {
-	first, second uint64
-	expected      uint64
+	first, second uint
+	expected      uint
 }
 
 func (tc testCase) assertValue(lcp lcppkg.LongestCommonPrefix, t *testing.T) {
@@ -76,21 +76,21 @@ func TestEmpty(t *testing.T) {
 
 func TestSamePrefixes(t *testing.T) {
 	const testedString = "banana"
-	const lenU64 = uint64(len(testedString))
+	const lenU64 = uint(len(testedString))
 
 	lcp := lcppkg.NewLongestCommonPrefix(testedString)
 
-	for i := uint64(0); i < lenU64; i++ {
+	for i := uint(0); i < lenU64; i++ {
 		testCase{first: i, second: i, expected: lenU64 - i}.assertValue(lcp, t)
 	}
 }
 
 func TestFearOfBigWords(t *testing.T) {
 	const testedString = "Hippopotomonstrosesquippedaliophobia" // fear of big words
-	const lenU64 = uint64(len(testedString))
+	const lenU = uint(len(testedString))
 
 	pCases := [...]testCase{
-		{first: 0, second: 0, expected: lenU64},
+		{first: 0, second: 0, expected: lenU},
 		{first: 3, second: 5, expected: 2},
 		{first: 22, second: 2, expected: 2},
 		{first: 12, second: 16, expected: 1},

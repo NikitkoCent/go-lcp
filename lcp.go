@@ -3,7 +3,6 @@
 package lcp
 
 import (
-	. "lcp/internal"
 	"math"
 )
 
@@ -18,7 +17,7 @@ type LongestCommonPrefix interface {
 	// Return value: position of the longest common prefix for specified suffixes
 	//
 	// Complexity: O(logN), where N is the string length
-	Get(firstSuffixIndex uint64, secondSuffixIndex uint64) uint64
+	Get(firstSuffixIndex uint, secondSuffixIndex uint) uint
 }
 
 // Create longest common prefix data structure for the specified string
@@ -30,16 +29,7 @@ type LongestCommonPrefix interface {
 func NewLongestCommonPrefix(str string) LongestCommonPrefix {
 	result := lcpImpl{}
 
-	result.len = uint64(len(str))
-
-	// O(N * log N)
-	sufArr, lcpArr := makeSuffixAndLcpArrays(str)
-
-	// O(N)
-	result.sortedSuffixesPos = sufArr.makeInversed()
-
-	// O(N)
-	result.commonPrefixesLengths = MakeMinSegmentTree(lcpArr)
+	result.initialize(str)
 
 	return &result
 }
@@ -52,67 +42,83 @@ const (
 	charsCount = charMax - charMin + 1
 )
 
-type suffixArray []uint64
-type equivClasses []uint64
-type inverseSuffixArray []uint64
-type lcpArray []uint64
+type suffixArray []uint
+type equivClasses []uint
 
 type lcpImpl struct {
-	len uint64
-	sortedSuffixesPos     inverseSuffixArray
-	commonPrefixesLengths SegmentTree
+	len uint
+	allEquivClasses []equivClasses
 }
 
-func (lcp *lcpImpl) Get(firstSuffixIndex uint64, secondSuffixIndex uint64) uint64 {
+func (lcp *lcpImpl) Get(firstSuffixIndex uint, secondSuffixIndex uint) uint {
 	if (firstSuffixIndex >= lcp.len) || (secondSuffixIndex >= lcp.len) {
 		panic("Index out of bounds")
 	}
 
 	if firstSuffixIndex == secondSuffixIndex {
-		return uint64(len(lcp.sortedSuffixesPos)) - firstSuffixIndex
+		return lcp.len - firstSuffixIndex
 	}
 
-	minIndex := lcp.sortedSuffixesPos[firstSuffixIndex]
-	maxIndex := lcp.sortedSuffixesPos[secondSuffixIndex]
+	result := uint(0)
 
-	if minIndex > maxIndex {
-		minIndex, maxIndex = maxIndex, minIndex
+	i := uint(len(lcp.allEquivClasses))
+	subStrLen := uint(1) << i
+	for ; i > 0; {
+		i--
+		subStrLen >>= 1
+
+		if lcp.allEquivClasses[i][firstSuffixIndex] == lcp.allEquivClasses[i][secondSuffixIndex] {
+			firstSuffixIndex += subStrLen
+			secondSuffixIndex += subStrLen
+
+			result += subStrLen
+
+			if (firstSuffixIndex >= lcp.len) || (secondSuffixIndex >= lcp.len) {
+				break
+			}
+		}
 	}
 
-	return lcp.commonPrefixesLengths.Get(minIndex, maxIndex - 1)
+	return result
 }
 
 
-func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
-	strLen := uint64(len(str))
+// Builds suffix array and equivalence classes
+//
+// Complexity: O(N * log N)
+func (lcp *lcpImpl) initialize(str string) {
+	lcp.len = 0
+	lcp.allEquivClasses = nil
 
-	sufArr := make(suffixArray, strLen)
-	eqClCurr := make(equivClasses, strLen)
-
-	if strLen == 0 {
-		return sufArr, nil
+	if len(str) < 1 {
+		return
 	}
 
-	classesCount := initSuffixArray(str, sufArr, eqClCurr)
+	lcp.len = uint(len(str))
 
-	sortedSufArr := make(suffixArray, strLen)
-	eqClNew := make(equivClasses, strLen)
+	if lcp.len == 1 {
+		lcp.allEquivClasses = []equivClasses{{0}}
+		return
+	}
 
-	sortingTable := make([]uint64, strLen)
+	lcp.allEquivClasses = make([]equivClasses, math.Ilogb(float64(lcp.len)) + 1)
+	for i := range lcp.allEquivClasses {
+		lcp.allEquivClasses[i] = make(equivClasses, lcp.len)
+	}
 
-	lcpCurr := make(lcpArray, strLen - 1)
-	lcpNew := make(lcpArray, strLen - 1)
+	sufArr := make(suffixArray, lcp.len)
+	sortingTable := make([]uint, lcp.len)
 
-	rPos := make([]uint64, strLen)
-	lPos := make([]uint64, strLen)
+	classesCount := initSuffixArray(str, sufArr, lcp.allEquivClasses[0])
 
-	// O(N * logN)
-	for oldSubStrLen := uint64(1); oldSubStrLen < strLen; oldSubStrLen *= 2 {
-		initPoses(rPos, lPos, sufArr, eqClCurr)
+	sortedSufArr := make(suffixArray, lcp.len)
 
+	for newEqClIndex, oldSubStrLen, newSubStrLen := uint(1), uint(1), uint(2);
+		newSubStrLen < lcp.len;
+		newEqClIndex, oldSubStrLen, newSubStrLen = newEqClIndex + 1, newSubStrLen, newSubStrLen * 2 {
 		for i := range sortedSufArr {
 			if sufArr[i] < oldSubStrLen {
-				sortedSufArr[i] = strLen
+				sortedSufArr[i] = lcp.len
 			} else {
 				sortedSufArr[i] = 0
 			}
@@ -121,64 +127,41 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 		}
 
 		sortingTable := sortingTable[:classesCount]
+		oldEqClasses := lcp.allEquivClasses[newEqClIndex - 1]
 
 		for i := range sortingTable {
 			sortingTable[i] = 0
 		}
 		for i := range sortedSufArr {
-			sortingTable[eqClCurr[sortedSufArr[i]]]++
+			sortingTable[oldEqClasses[sortedSufArr[i]]]++
 		}
 
-		// O(1)
 		for i := 1; i < len(sortingTable); i++ {
 			sortingTable[i] += sortingTable[i - 1]
 		}
 
-		for i := strLen; i > 0; {
+		for i := lcp.len; i > 0; {
 			i--
-			tableIndex := eqClCurr[sortedSufArr[i]]
+			tableIndex := oldEqClasses[sortedSufArr[i]]
 			sortingTable[tableIndex]--
 			sufArr[sortingTable[tableIndex]] = sortedSufArr[i]
 		}
 
-		eqClNew[sufArr[0]] = 0
+		newEqClasses := lcp.allEquivClasses[newEqClIndex]
+
+		newEqClasses[sufArr[0]] = 0
 		classesCount = 1
 
-		for i := 1; i < len(sufArr); i++ {
-			mid1, mid2 := (sufArr[i] + oldSubStrLen)%strLen, (sufArr[i - 1] + oldSubStrLen) % strLen
+		for i := uint(1); i < lcp.len; i++ {
+			mid1, mid2 := (sufArr[i] + oldSubStrLen) % lcp.len, (sufArr[i - 1] + oldSubStrLen) % lcp.len
 
-			if (eqClCurr[sufArr[i]] != eqClCurr[sufArr[i - 1]]) || (eqClCurr[mid1] != eqClCurr[mid2]) {
+			if (oldEqClasses[sufArr[i]] != oldEqClasses[sufArr[i - 1]]) || (oldEqClasses[mid1] != oldEqClasses[mid2]) {
 				classesCount++
 			}
 
-			eqClNew[sufArr[i]] = classesCount - 1
+			newEqClasses[sufArr[i]] = classesCount - 1
 		}
-
-		lcpRmq := MakeMinSegmentTree(lcpCurr)
-		for i := range lcpNew {
-			subStr1Pos, subStr2Pos := sufArr[i], sufArr[i + 1]
-
-			if eqClCurr[subStr1Pos] == eqClCurr[subStr2Pos] {
-				str1Pos := (subStr1Pos + oldSubStrLen) % strLen
-				str2Pos := (subStr2Pos + oldSubStrLen) % strLen
-
-				lcpNew[i] = Min(strLen, oldSubStrLen + lcpRmq.Get(lPos[eqClCurr[str1Pos]], rPos[eqClCurr[str2Pos]] - 1))
-			} else {
-				lcpNew[i] = lcpCurr[rPos[eqClCurr[subStr1Pos]]]
-			}
-		}
-
-		lcpCurr, lcpNew = lcpNew, lcpCurr
-		eqClCurr, eqClNew = eqClNew, eqClCurr
 	}
-
-	// avoiding circular substrings
-	// O(N)
-	for i := range lcpCurr {
-		lcpCurr[i] = Min(lcpCurr[i], Min(strLen - sufArr[i], strLen - sufArr[i + 1]))
-	}
-
-	return sufArr, lcpCurr
 }
 
 // Initializes suffix array and array of equivalence classes
@@ -186,8 +169,8 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 // Returns count of equivalence classes
 //
 // Complexity: O(N)
-func initSuffixArray(str string, sufArr suffixArray, eqCl equivClasses) uint64 {
-	sortingTable := [charsCount]uint64{}
+func initSuffixArray(str string, sufArr suffixArray, eqCl equivClasses) uint {
+	sortingTable := [charsCount]uint{}
 
 	// O(N)
 	for _, ch := range str {
@@ -202,11 +185,11 @@ func initSuffixArray(str string, sufArr suffixArray, eqCl equivClasses) uint64 {
 	// O(N)
 	for i, ch := range str {
 		sortingTable[ch]--
-		sufArr[sortingTable[ch]] = uint64(i)
+		sufArr[sortingTable[ch]] = uint(i)
 	}
 
 	eqCl[sufArr[0]] = 0
-	classesCount := uint64(1)
+	classesCount := uint(1)
 
 	// O(N)
 	for i := 1; i < len(sufArr); i++ {
@@ -218,28 +201,4 @@ func initSuffixArray(str string, sufArr suffixArray, eqCl equivClasses) uint64 {
 	}
 
 	return classesCount
-}
-
-// O(N)
-func initPoses(rPos []uint64, lPos []uint64, sufArr suffixArray, eqCl equivClasses) {
-	for i := range rPos {
-		rPos[eqCl[sufArr[i]]] = uint64(i)
-	}
-
-	for i := uint64(len(lPos)); i > 0; {
-		i--
-		lPos[eqCl[sufArr[i]]] = i
-	}
-}
-
-
-// O(N)
-func (sufArr suffixArray) makeInversed() inverseSuffixArray {
-	result := make(inverseSuffixArray, len(sufArr))
-
-	for i, val := range sufArr {
-		result[val] = uint64(i)
-	}
-
-	return result
 }
