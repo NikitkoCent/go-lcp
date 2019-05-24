@@ -87,28 +87,28 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 	strLen := uint64(len(str))
 
 	sufArr := make(suffixArray, strLen)
-	eqCl := make(equivClasses, strLen)
+	eqClCurr := make(equivClasses, strLen)
 
 	if strLen == 0 {
 		return sufArr, nil
 	}
 
-	classesCount := initSuffixArray(str, &sufArr, &eqCl)
+	classesCount := initSuffixArray(str, sufArr, eqClCurr)
 
 	sortedSufArr := make(suffixArray, strLen)
-	eqClTemp := make(equivClasses, strLen)
+	eqClNew := make(equivClasses, strLen)
 
 	sortingTable := make([]uint64, strLen)
 
-	lcp := make(lcpArray, strLen - 1)
-	lcpTemp := make(lcpArray, strLen - 1)
+	lcpCurr := make(lcpArray, strLen - 1)
+	lcpNew := make(lcpArray, strLen - 1)
 
 	rPos := make([]uint64, strLen)
 	lPos := make([]uint64, strLen)
 
 	// O(N * logN)
 	for oldSubStrLen := uint64(1); oldSubStrLen < strLen; oldSubStrLen *= 2 {
-		initPoses(rPos, lPos, sufArr, eqCl)
+		initPoses(rPos, lPos, sufArr, eqClCurr)
 
 		for i := range sortedSufArr {
 			if sufArr[i] < oldSubStrLen {
@@ -126,65 +126,67 @@ func makeSuffixAndLcpArrays(str string) (suffixArray, lcpArray) {
 			sortingTable[i] = 0
 		}
 		for i := range sortedSufArr {
-			sortingTable[eqCl[sortedSufArr[i]]]++
+			sortingTable[eqClCurr[sortedSufArr[i]]]++
 		}
 
 		// O(1)
 		for i := 1; i < len(sortingTable); i++ {
-			sortingTable[i] += sortingTable[i-1]
+			sortingTable[i] += sortingTable[i - 1]
 		}
 
 		for i := strLen; i > 0; {
 			i--
-			tableIndex := eqCl[sortedSufArr[i]]
+			tableIndex := eqClCurr[sortedSufArr[i]]
 			sortingTable[tableIndex]--
 			sufArr[sortingTable[tableIndex]] = sortedSufArr[i]
 		}
 
-		eqClTemp[sufArr[0]] = 0
+		eqClNew[sufArr[0]] = 0
 		classesCount = 1
 
 		for i := 1; i < len(sufArr); i++ {
-			mid1, mid2 := (sufArr[i]+oldSubStrLen)%strLen, (sufArr[i-1]+oldSubStrLen)%strLen
+			mid1, mid2 := (sufArr[i] + oldSubStrLen)%strLen, (sufArr[i - 1] + oldSubStrLen) % strLen
 
-			if (eqCl[sufArr[i]] != eqCl[sufArr[i-1]]) || (eqCl[mid1] != eqCl[mid2]) {
+			if (eqClCurr[sufArr[i]] != eqClCurr[sufArr[i - 1]]) || (eqClCurr[mid1] != eqClCurr[mid2]) {
 				classesCount++
 			}
 
-			eqClTemp[sufArr[i]] = classesCount - 1
+			eqClNew[sufArr[i]] = classesCount - 1
 		}
 
-		lcpRmq := MakeMinSegmentTree(lcp)
-		for i := range lcpTemp {
+		lcpRmq := MakeMinSegmentTree(lcpCurr)
+		for i := range lcpNew {
 			subStr1Pos, subStr2Pos := sufArr[i], sufArr[i + 1]
 
-			if eqCl[subStr1Pos] == eqCl[subStr2Pos] {
+			if eqClCurr[subStr1Pos] == eqClCurr[subStr2Pos] {
 				str1Pos := (subStr1Pos + oldSubStrLen) % strLen
 				str2Pos := (subStr2Pos + oldSubStrLen) % strLen
 
-				lcpTemp[i] = Min(strLen, oldSubStrLen + lcpRmq.Get(lPos[eqCl[str1Pos]], rPos[eqCl[str2Pos]] - 1))
+				lcpNew[i] = Min(strLen, oldSubStrLen + lcpRmq.Get(lPos[eqClCurr[str1Pos]], rPos[eqClCurr[str2Pos]] - 1))
 			} else {
-				lcpTemp[i] = lcp[rPos[eqCl[subStr1Pos]]]
+				lcpNew[i] = lcpCurr[rPos[eqClCurr[subStr1Pos]]]
 			}
 		}
 
-		lcp, lcpTemp = lcpTemp, lcp
-		eqCl, eqClTemp = eqClTemp, eqCl
+		lcpCurr, lcpNew = lcpNew, lcpCurr
+		eqClCurr, eqClNew = eqClNew, eqClCurr
 	}
 
 	// avoiding circular substrings
 	// O(N)
-	for i := range lcp {
-		lcp[i] = Min(lcp[i], Min(strLen - sufArr[i], strLen - sufArr[i + 1]))
+	for i := range lcpCurr {
+		lcpCurr[i] = Min(lcpCurr[i], Min(strLen - sufArr[i], strLen - sufArr[i + 1]))
 	}
 
-	return sufArr, lcp
+	return sufArr, lcpCurr
 }
 
 // Initializes suffix array and array of equivalence classes
+//
 // Returns count of equivalence classes
+//
 // Complexity: O(N)
-func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint64 {
+func initSuffixArray(str string, sufArr suffixArray, eqCl equivClasses) uint64 {
 	sortingTable := [charsCount]uint64{}
 
 	// O(N)
@@ -194,30 +196,31 @@ func initSuffixArray(str string, sufArr *suffixArray, eqCl *equivClasses) uint64
 
 	// O(1)
 	for i := 1; i < len(sortingTable); i++ {
-		sortingTable[i] += sortingTable[i-1]
+		sortingTable[i] += sortingTable[i - 1]
 	}
 
 	// O(N)
 	for i, ch := range str {
 		sortingTable[ch]--
-		(*sufArr)[sortingTable[ch]] = uint64(i)
+		sufArr[sortingTable[ch]] = uint64(i)
 	}
 
-	(*eqCl)[(*sufArr)[0]] = 0
+	eqCl[sufArr[0]] = 0
 	classesCount := uint64(1)
 
 	// O(N)
-	for i := 1; i < len(*sufArr); i++ {
-		if str[(*sufArr)[i]] != str[(*sufArr)[i-1]] {
+	for i := 1; i < len(sufArr); i++ {
+		if str[sufArr[i]] != str[sufArr[i - 1]] {
 			classesCount++
 		}
 
-		(*eqCl)[(*sufArr)[i]] = classesCount - 1
+		eqCl[sufArr[i]] = classesCount - 1
 	}
 
 	return classesCount
 }
 
+// O(N)
 func initPoses(rPos []uint64, lPos []uint64, sufArr suffixArray, eqCl equivClasses) {
 	for i := range rPos {
 		rPos[eqCl[sufArr[i]]] = uint64(i)
@@ -228,6 +231,7 @@ func initPoses(rPos []uint64, lPos []uint64, sufArr suffixArray, eqCl equivClass
 		lPos[eqCl[sufArr[i]]] = i
 	}
 }
+
 
 // O(N)
 func (sufArr suffixArray) makeInversed() inverseSuffixArray {

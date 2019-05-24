@@ -10,7 +10,7 @@ type SegmentTree interface {
 func MakeMinSegmentTree(dataArray []uint64) SegmentTree {
 	result := minSegmentTree{}
 	result.size = uint64(len(dataArray))
-	result.tree = make([]uint64, result.size*4)
+	result.tree = make([]uint64, result.size * 4)
 
 	if result.size > 0 {
 		result.initializeFrom(dataArray, 0)
@@ -32,9 +32,9 @@ func (tree minSegmentTree) initializeFrom(dataArray []uint64, currentIndex uint6
 	if length == 1 {
 		tree.tree[currentIndex] = dataArray[0]
 	} else {
-		dataMiddleIndex := (length-1)/2 + 1
+		dataMiddleIndex := (length - 1) / 2 + 1
 
-		leftChildIndex := 2*currentIndex + 1
+		leftChildIndex := 2 * currentIndex + 1
 		rightChildIndex := leftChildIndex + 1
 
 		tree.initializeFrom(dataArray[:dataMiddleIndex], leftChildIndex)
@@ -56,11 +56,11 @@ func (tree minSegmentTree) getImpl(minIndex, maxIndex, vertexIndex, rangeMinInde
 	rangeMiddle := (rangeMinIndex + rangeMaxIndex) / 2
 
 	if maxIndex <= rangeMiddle {
-		return tree.getImpl(minIndex, maxIndex, vertexIndex*2+1, rangeMinIndex, rangeMiddle)
+		return tree.getImpl(minIndex, maxIndex, vertexIndex * 2 + 1, rangeMinIndex, rangeMiddle)
 	} else if minIndex > rangeMiddle {
-		return tree.getImpl(minIndex, maxIndex, vertexIndex*2+2, rangeMiddle+1, rangeMaxIndex)
+		return tree.getImpl(minIndex, maxIndex, vertexIndex * 2 + 2, rangeMiddle + 1, rangeMaxIndex)
 	}
 
-	return Min(tree.getImpl(minIndex, rangeMiddle, vertexIndex*2+1, rangeMinIndex, rangeMiddle),
-		tree.getImpl(rangeMiddle+1, maxIndex, vertexIndex*2+2, rangeMiddle+1, rangeMaxIndex))
+	return Min(tree.getImpl(minIndex, rangeMiddle, vertexIndex * 2 + 1, rangeMinIndex, rangeMiddle),
+		tree.getImpl(rangeMiddle + 1, maxIndex, vertexIndex * 2 + 2, rangeMiddle + 1, rangeMaxIndex))
 }
