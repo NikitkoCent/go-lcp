@@ -1,7 +1,7 @@
 # lcp
 Effectively search the longest common prefix length for two specified suffixes of the given string.
 
-Takes O(N * log(N)) for preprocessing and O(log(N)) on searching (N is length of the string).
+Takes `O(N * log(N))` for preprocessing and `O(log(N))` on searching (`N` is length of the string).
 
 # Usage example
 ```go
