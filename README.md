@@ -9,7 +9,7 @@ package main
 
 import (
 	"fmt"
-	lcppkg "github.com/NikitkoCent/lcp"
+	lcppkg "github.com/NikitkoCent/go-lcp"
 )
 
 func main() {
