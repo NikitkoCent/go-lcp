@@ -3,7 +3,7 @@ Effectively search the longest common prefix length for two specified suffixes o
 
 Takes `O(N * log(N))` for preprocessing and `O(log(N))` on searching (`N` is length of the string).
 
-# Usage example
+# Usage example ([play.golang.org](https://play.golang.org/p/LdcJpaPtGAS))
 ```go
 package main
 
