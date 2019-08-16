@@ -1,4 +1,4 @@
-// Package LCP provides data structure which allows effectively calculate
+// Package lcp provides data structure which allows effectively calculate
 // longest common prefix of two any suffixes of specified string.
 package lcp
 

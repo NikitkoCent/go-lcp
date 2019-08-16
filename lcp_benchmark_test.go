@@ -1,7 +1,7 @@
 package lcp_test
 
 import (
-	lcppkg "lcp"
+	lcppkg "github.com/NikitkoCent/go-lcp"
 	"math/rand"
 	"os"
 	"testing"
